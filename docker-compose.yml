@@ -1,0 +1,43 @@
+version: '2.1'
+services:
+  polls-db:
+    image: "postgres:11-alpine"
+    container_name: 'polls-db'
+    hostname: 'polls-db'
+    environment:
+      POSTGRES_PASSWORD: abcd1234
+      POSTGRES_USER: polls
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: polls
+    ports:
+    - 5432:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U polls"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - backend
+  polls-django:
+    image: "polls:latest"
+    command: "./launch-server.sh"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: 'polls-django'
+    hostname: 'polls-django'
+    environment:
+      POSTGRES_PASSWORD: abcd1234
+      POSTGRES_DB: polls
+      POSTGRES_USER: polls
+      POSTGRES_PORT: 5432
+      POSTGRES_HOST: polls-db
+    depends_on:
+      polls-db:
+        condition: service_healthy
+    networks:
+      - backend
+    ports:
+    - 8000:8000
+networks:
+  backend:
